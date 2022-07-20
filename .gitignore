@@ -1,3 +1,6 @@
+# Custom (don't push .csv file with card/track associations)
+*.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
