@@ -15,11 +15,11 @@ DEVICE_ID = os.getenv("DEVICE_ID")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
-card_song_dict = {}
+card_dict = {}
 
-with open('card-track-dictionairy.csv', mode='r') as f:
+with open('card-dictionairy.csv', mode='r') as f:
     reader = csv.reader(f)
-    card_song_dict = {rows[0]:rows[1] for rows in reader}
+    card_dict = {rows[0]:(rows[1],rows[2]) for rows in reader}
 
 while True:
     try:
@@ -33,11 +33,14 @@ while True:
             print("Read succesful! Finding track corresponding to card...")
             sleep(2)
             try:
-                song_uri = card_song_dict[str(card_id)]
-                spotify_uri = "spotify:track:" + song_uri
-                print("Track matched to card! Playing...")
+                card_info = card_dict[str(card_id)]
+                print("Matching card found! Playing...")
                 sp.transfer_playback(device_id=DEVICE_ID, force_play=False)
-                sp.start_playback(device_id=DEVICE_ID, uris=[spotify_uri])
+                print(card_info[0])
+                if card_info[1] == "track":
+                    sp.start_playback(device_id=DEVICE_ID, uris=[card_info[0]])
+                else:
+                    sp.start_playback(device_id=DEVICE_ID, context_uri=card_info[0])
                 sleep(2)
             except KeyError:
                 print("Unkown card presented! First add card association using the add-card.py script.")
