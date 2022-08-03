@@ -16,4 +16,4 @@ Additional Python packages required:
 
 ## TODO:
 
-- Add support for adding playlists/albums through the `add-card.py` script.
+- Enable shuffling when playing artist/albumn/playlist (now always plays the first track - a.k.a. index 0)
