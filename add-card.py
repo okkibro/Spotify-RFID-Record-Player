@@ -60,7 +60,7 @@ while True:
         # Add card and corresponding information to dictionairy
         print(f"The URI for this {type} is: {uri}")
         print("Creating association in file and exiting...")
-        with open("card-uri-dictionairy.csv", "a+") as f:
+        with open("card-dictionairy.csv", "a+") as f:
                 f.write(card_id + "," + uri + "," + type + "," + name + "\n")
 
     finally:
