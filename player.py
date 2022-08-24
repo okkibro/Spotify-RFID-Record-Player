@@ -8,6 +8,7 @@ from time import sleep
 from dotenv import load_dotenv
 import os
 import csv
+import random
 
 load_dotenv()
 
@@ -35,12 +36,25 @@ while True:
             try:
                 card_info = card_dict[str(card_id)]
                 print("Matching card found! Playing...")
-                sp.transfer_playback(device_id=DEVICE_ID, force_play=False)
+                sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
                 print(card_info[0])
                 if card_info[1] == "track":
                     sp.start_playback(device_id=DEVICE_ID, uris=[card_info[0]])
-                else:
-                    sp.start_playback(device_id=DEVICE_ID, context_uri=card_info[0])
+                elif card_info[1] == "playlist":
+                    tracks = sp.playlist_tracks(card_info[0],limit=100)["items"]
+                    track_count = len(tracks)
+                    random_start_track = random.randint(0,track_count-1)
+                    sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset={"position":random_start_track})
+                    sp.shuffle(True,device_id=DEVICE_ID)
+                elif card_info[1] == "album":
+                    tracks = sp.album_tracks(card_info[0],limit=50)["items"]
+                    track_count = len(tracks)
+                    random_start_track = random.randint(0,track_count-1)
+                    sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset=random_start_track)
+                    sp.shuffle(True,device_id=DEVICE_ID)
+                elif card_info[1] == "artist":
+                    sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0])
+                    sp.shuffle(True,device_id=DEVICE_ID)
                 sleep(2)
             except KeyError:
                 print("Unkown card presented! First add card association using the add-card.py script.")

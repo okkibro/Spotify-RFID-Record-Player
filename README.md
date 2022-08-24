@@ -16,4 +16,5 @@ Additional Python packages required:
 
 ## TODO:
 
-- Enable shuffling when playing artist/albumn/playlist (now always plays the first track - a.k.a. index 0)
+- Enable better shuffling for artists (now always plays first track first and the other random tracks)
+- Increase standard limit of playlist from 100 to inifinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1)
