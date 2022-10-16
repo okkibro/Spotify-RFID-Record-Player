@@ -17,4 +17,7 @@ Additional Python packages required:
 ## TODO:
 
 - Enable better shuffling for artists (now always plays first track first and the other random tracks)
-- Increase standard limit of playlist from 100 to inifinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1)
+- Increase standard limit of playlist from 100 to infinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1)
+- Add functionality to skip to next track when scanning currently playing track
+- Add functionality to add track to queue instead of skipping currently playing track
+- Add start-up script template to enable script to be automatically executed at startup
