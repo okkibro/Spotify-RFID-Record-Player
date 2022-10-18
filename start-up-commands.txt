@@ -1,0 +1,11 @@
+# Uncomment these lines at put them at  the bottom of your .bashrc/.zshrc/.cshrc/... 
+# file found in your $HOME directory to have the player automatically start at boot
+
+# Change directory to location of "Spotify-RFID-Record-Player" git repository
+# (needed in order for spotipy to find the ".cache" file found in the directory)
+# cd <Spotify-RFID-Record-Player directory>
+
+# Execute "player.py" and run the player in the background
+# If you want it back in the foreground, you can execute "jobs" followed
+# by "fg %<job ID of player>"
+# python3 player.py &

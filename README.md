@@ -9,6 +9,7 @@ Additional Python packages required:
 
 - Added `add-card.py` script that allows you to easily add "card-track" pairs. First, play the desired track on the `raspotify` device. Next, run the `add-card.py` script and hold an RFID card/tag to the `MFRC522`. The ID of the card and the ID of the currently playing track then get added to a `.csv` file.
 - Updated `player.py` script to read from previously mentioned `.csv` file, without the need to update the file for each added song.
+- Added template for commands to automatically run the player at system start-up in `start-up-commands.txt`.
 
 ## Additional requirements
 
@@ -16,8 +17,7 @@ Additional Python packages required:
 
 ## TODO:
 
-- Enable better shuffling for artists (now always plays first track first and the other random tracks)
-- Increase standard limit of playlist from 100 to infinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1)
-- Add functionality to skip to next track when scanning currently playing track
-- Add functionality to add track to queue instead of skipping currently playing track
-- Add start-up script template to enable script to be automatically executed at startup
+- Enable better shuffling for artists (now always plays first track first and the other random tracks).
+- Increase standard limit of playlist from 100 to infinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1).
+- Add functionality to skip to next track (in queue) when currently playing track is scanned again.
+- Add functionality to add track to queue instead of skipping currently playing track.
