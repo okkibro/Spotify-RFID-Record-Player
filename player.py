@@ -16,18 +16,18 @@ load_dotenv()
 DEVICE_ID = os.getenv("DEVICE_ID")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+GIT_DIR = os.getenv("GIT_DIR")
 
-def player(reader, sp, card_dict):
+def player(card_dict, reader, auth_manager, sp):
     while True:
         print("Waiting for record scan...")
         card_id = reader.read()[0]
         print("Read succesful! Finding track corresponding to card...")
-        sleep(2)
         try:
             card_info = card_dict[str(card_id)]
             print("Matching card found! Playing...")
+            auth_manager, sp = refresh_spotify(auth_manager, sp)
             sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
-            print(card_info[0])
             if card_info[1] == "track":
                 sp.start_playback(device_id=DEVICE_ID, uris=[card_info[0]])
             elif card_info[1] == "playlist":
@@ -45,28 +45,16 @@ def player(reader, sp, card_dict):
             elif card_info[1] == "artist":
                 sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0])
                 sp.shuffle(True,device_id=DEVICE_ID)
-            sleep(2)
+            sleep(1)
 
         except KeyError:
             print("Unknown card presented! First add card association using the add-card.py script.")
             pass
 
-def initialize():
+
+def create_reader():
     try:
         reader = SimpleMFRC522()
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-            client_id=CLIENT_ID,
-            client_secret=CLIENT_SECRET,
-            redirect_uri="http://localhost:8080",
-            scope="""
-                user-read-playback-state,
-                user-modify-playback-state,
-                user-read-currently-playing,
-                playlist-modify-private,
-                playlist-read-private
-                """
-            )
-        )
 
     except Exception as e:
         print(e)
@@ -76,7 +64,39 @@ def initialize():
         print("Cleaning up...")
         GPIO.cleanup()
 
-    return reader, sp
+    return reader
+
+
+def create_spotify():
+    auth_manager = SpotifyOAuth(
+        open_browser=False,
+        redirect_uri='http://localhost:8080',
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        scope="""
+            user-read-playback-state,
+            user-modify-playback-state,
+            user-read-currently-playing,
+            playlist-modify-private,
+            playlist-read-private
+            """
+    )
+
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+
+    return auth_manager, sp
+
+
+def refresh_spotify(auth_manager, sp):
+    token_info = auth_manager.cache_handler.get_cached_token()
+
+    if auth_manager.is_token_expired(token_info):
+        token_info = auth_manager.refresh_access_token(token_info['refresh_token'])
+        token = token_info['access_token']
+        sp = spotipy.Spotify(auth=token)
+
+    return auth_manager, sp
+
 
 def read_dictionairy(file_location):
     card_dict = {}
@@ -87,13 +107,17 @@ def read_dictionairy(file_location):
 
     return card_dict
 
+
 def main(queue=False):
     print("Reading card dictionairy...")
-    card_dict = read_dictionairy('/home/omuller/Spotify-RFID-Record-Player/card-dictionairy.csv')
-    print("Initializing reader and spotipy...")
-    reader, sp = initialize()
+    card_dict = read_dictionairy(GIT_DIR + '/card-dictionairy.csv')
+    print("Initializing reader...")
+    reader = create_reader()
+    print("Initializing spotify...")
+    auth_manager, sp = create_spotify()
     print("Starting player...")
-    player(reader, sp, card_dict)
+    player(card_dict, reader, auth_manager, sp)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Control Spotify Connect device using MFRC522, RFID tags, and the Spotify API')
