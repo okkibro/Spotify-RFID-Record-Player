@@ -26,7 +26,7 @@ I would recommend using [tmux](https://github.com/tmux/tmux) for running the rec
 5. Detach from tmux session (`Ctrl-B + D`)
 6. Disconnect SSH connection (`exit`)
 
-A good cheatsheet for `tmux` usage can be found [here]9https://gist.github.com/MohamedAlaa/2961058). The most important command - for when you want to reattach to the previously created `tmux` session - is `tmux attach -t [name]`.
+A good cheatsheet for `tmux` usage can be found [here](https://gist.github.com/MohamedAlaa/2961058). The most important command - for when you want to reattach to the previously created `tmux` session - is `tmux attach -t [name]`.
 
 ## TODO
 
