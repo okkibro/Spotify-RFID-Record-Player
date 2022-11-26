@@ -18,7 +18,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 GIT_DIR = os.getenv("GIT_DIR")
 
-def player(card_dict, reader, auth_manager, sp):
+def player(card_dict, reader, auth_manager, sp, queue, skip):
     while True:
         print("Waiting for record scan...")
         card_id = reader.read()[0]
@@ -28,28 +28,65 @@ def player(card_dict, reader, auth_manager, sp):
             print("Matching card found! Playing...")
             auth_manager, sp = refresh_spotify(auth_manager, sp)
             sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
-            if card_info[1] == "track":
-                sp.start_playback(device_id=DEVICE_ID, uris=[card_info[0]])
-            elif card_info[1] == "playlist":
-                tracks = sp.playlist_tracks(card_info[0],limit=100)["items"]
-                track_count = len(tracks)
-                random_start_track = random.randint(0,track_count-1)
-                sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset={"position":random_start_track})
-                sp.shuffle(True,device_id=DEVICE_ID)
-            elif card_info[1] == "album":
-                tracks = sp.album_tracks(card_info[0],limit=50)["items"]
-                track_count = len(tracks)
-                random_start_track = random.randint(0,track_count-1)
-                sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset=random_start_track)
-                sp.shuffle(True,device_id=DEVICE_ID)
-            elif card_info[1] == "artist":
-                sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0])
-                sp.shuffle(True,device_id=DEVICE_ID)
-            sleep(1)
+            is_playing = sp.currently_playing()['is_playing']
+            is_same_song = check_same_song(sp, card_info)
+
+            print('is_queuing', queue)
+            print('is_skipping', skip)
+            print('is_playing', is_playing)
+            print('is_same_song', is_same_song)
+
+            if is_playing and queue and not is_same_song:
+                print('Adding to queue!')
+                add_to_queue(sp, card_info)
+            elif is_playing and is_same_song and skip:
+                print('Skipping item!')
+                skip_item(sp)
+            else:
+                print('Playing item!')
+                play_item(sp, card_info)
 
         except KeyError:
             print("Unknown card presented! First add card association using the add-card.py script.")
             pass
+
+
+def check_same_song(sp, card_info):
+    currently_playing = sp.currently_playing()
+    current_song = currently_playing['item']['uri']
+    if current_song == card_info[0]:
+        return True
+    else:
+        return False
+
+
+def add_to_queue(sp, card_info):
+    sp.add_to_queue(device_id=DEVICE_ID, uri=card_info[0])
+    sp.start_playback()
+
+
+def skip_item(sp):
+    sp.next_track(device_id=DEVICE_ID)
+
+
+def play_item(sp, card_info):
+    if card_info[1] == "track":
+        sp.start_playback(device_id=DEVICE_ID, uris=[card_info[0]])
+    elif card_info[1] == "playlist":
+        tracks = sp.playlist_tracks(card_info[0],limit=100)["items"]
+        track_count = len(tracks)
+        random_start_track = random.randint(0,track_count-1)
+        sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset={"position":random_start_track})
+        sp.shuffle(True,device_id=DEVICE_ID)
+    elif card_info[1] == "album":
+        tracks = sp.album_tracks(card_info[0],limit=50)["items"]
+        track_count = len(tracks)
+        random_start_track = random.randint(0,track_count-1)
+        sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0],offset=random_start_track)
+        sp.shuffle(True,device_id=DEVICE_ID)
+    elif card_info[1] == "artist":
+        sp.start_playback(device_id=DEVICE_ID,context_uri=card_info[0])
+        sp.shuffle(True,device_id=DEVICE_ID)
 
 
 def create_reader():
@@ -108,7 +145,7 @@ def read_dictionairy(file_location):
     return card_dict
 
 
-def main(queue=False):
+def main(queue=False, skip=False):
     print("Reading card dictionairy...")
     card_dict = read_dictionairy(GIT_DIR + '/card-dictionairy.csv')
     print("Initializing reader...")
@@ -116,11 +153,12 @@ def main(queue=False):
     print("Initializing spotify...")
     auth_manager, sp = create_spotify()
     print("Starting player...")
-    player(card_dict, reader, auth_manager, sp)
+    player(card_dict, reader, auth_manager, sp, queue, skip)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Control Spotify Connect device using MFRC522, RFID tags, and the Spotify API')
     parser.add_argument('-q', '--queue', action='store_true', help='Add song to queue when song is already playing, instead of skipping currently playing song')
+    parser.add_argument('-s', '--skip', action='store_true', help='If the currently playing song is scanned again, the next song in the queue (if present) will be played')
     args = parser.parse_args()
-    main(args.queue)
+    main(args.queue, args.skip)
