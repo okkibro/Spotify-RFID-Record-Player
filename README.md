@@ -34,3 +34,11 @@ A good cheatsheet for `tmux` usage can be found [here](https://gist.github.com/M
 - Enable better shuffling for artists (now always plays first track first and the other random tracks).
 - Increase standard limit of playlist from 100 to infinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1).
 - See if small delay/overlay when adding track to queue can be fixed
+
+## Known issues
+
+- When first starting the `player.py` script and trying to scan an RFID card, you will always get an `HTTP Error for PUT to https://api.spotify.com/v1/me/player with Params: {} returned 404 due to Device not found` error. This is always the case, since, when a new device is added to the network (i.e.: when the `player.py` script starts running and the `raspotify` Spotify Connect device is initialized) it is not visible. The Spotify Developer Guide also mentions [this](https://developer.spotify.com/documentation/web-api/guides/using-connect-web-api/#devices-not-appearing-on-device-list) (in this case it's for the Connect Web API, but I'm guessing the reason is similar). The only way to fix this (maybe there are other ways, but this is the consistent way I fixed it) is by first manually connecting to the `raspotify` device with your phone/desktop. You don't even have to play a song with it, but just the act of connecting with it, will make the device discoverable and the `player.py` script work.
+
+## How to fix autoplay "feature"
+
+- `raspotify` uses [librespot](https://github.com/librespot-org/librespot) as its back-end client library for Spotify. `librespot` has a bunch of [options](https://github.com/librespot-org/librespot/wiki/Options), one of which is `autoplay`. Normally, when using `librespot` as stand-alone software, autoplay is enabled by handing it as a flag, but for `raspotify` this is done in the form of a config file located at `/etc/raspotify/conf`. This feature is enabled by default, which means that when you scan a single RFID card, it will *always* start playing similar songs, even if you want to play just the song you just scanned. This feature can be disabled by going to the aforementioned config file, commenting out the line called `LIBRESPOT_AUTOPLAY=` by placing a `#` in front of it, and then running `sudo systemctl restart raspotify`.

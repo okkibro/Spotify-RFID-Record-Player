@@ -10,6 +10,8 @@ import os
 import csv
 import random
 import argparse
+import requests
+import urllib3
 
 load_dotenv()
 
@@ -23,38 +25,53 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
         print("Waiting for record scan...")
         card_id = reader.read()[0]
         print("Read succesful! Finding track corresponding to card...")
+
         try:
             card_info = card_dict[str(card_id)]
             print("Matching card found! Playing...")
-            auth_manager, sp = refresh_spotify(auth_manager, sp)
-            sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
-            is_playing = sp.currently_playing()['is_playing']
-            is_same_song = check_same_song(sp, card_info)
-
-            print('is_queuing', queue)
-            print('is_skipping', skip)
-            print('is_playing', is_playing)
-            print('is_same_song', is_same_song)
-
-            if is_playing and queue and not is_same_song:
-                print('Adding to queue!')
-                add_to_queue(sp, card_info)
-            elif is_playing and is_same_song and skip:
-                print('Skipping item!')
-                skip_item(sp)
-            else:
-                print('Playing item!')
-                play_item(sp, card_info)
 
         except KeyError:
             print("Unknown card presented! First add card association using the add-card.py script.")
             pass
 
+        auth_manager, sp = refresh_spotify(auth_manager, sp)
 
-def check_same_song(sp, card_info):
-    currently_playing = sp.currently_playing()
-    current_song = currently_playing['item']['uri']
-    if current_song == card_info[0]:
+        try:
+            sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
+
+        except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
+            print("Connection was temporarily reset! Attempting to reconnect and restart...")
+            auth_manager, sp = refresh_spotify(auth_manager, sp)
+            pass
+
+        currently_playing = sp.currently_playing()
+        is_playing = get_is_playing(currently_playing)
+        is_same_song = check_same_song(currently_playing, card_info)
+
+        if is_playing and queue and not is_same_song:
+            print('Adding to queue!')
+            add_to_queue(sp, card_info)
+        elif is_playing and is_same_song and skip:
+            print('Skipping item!')
+            skip_item(sp)
+        else:
+            print('Playing item!')
+            play_item(sp, card_info)
+
+
+def get_is_playing(currently_playing):
+    if currently_playing is None:
+        return False
+    if currently_playing['is_playing'] is True:
+        return True
+    else:
+        return False
+
+
+def check_same_song(currently_playing, card_info):
+    if currently_playing is None:
+        return False
+    elif currently_playing['item']['uri'] == card_info[0]:
         return True
     else:
         return False
@@ -128,9 +145,16 @@ def refresh_spotify(auth_manager, sp):
     token_info = auth_manager.cache_handler.get_cached_token()
 
     if auth_manager.is_token_expired(token_info):
-        token_info = auth_manager.refresh_access_token(token_info['refresh_token'])
-        token = token_info['access_token']
-        sp = spotipy.Spotify(auth=token)
+        print("Refreshing token!")
+
+        try:
+            token_info = auth_manager.refresh_access_token(token_info['refresh_token'])
+            token = token_info['access_token']
+            sp = spotipy.Spotify(auth=token)
+
+        except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
+            print("Something went wrong with the connection! Trying again...")
+            pass
 
     return auth_manager, sp
 
