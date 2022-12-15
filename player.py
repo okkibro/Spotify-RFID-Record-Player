@@ -37,6 +37,9 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
         auth_manager, sp = refresh_spotify(auth_manager, sp)
 
         try:
+            currently_playing = sp.currently_playing()
+            is_playing = get_is_playing(currently_playing)
+            is_same_song = check_same_song(currently_playing, card_info)
             sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
 
         except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
@@ -44,25 +47,23 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
             auth_manager, sp = refresh_spotify(auth_manager, sp)
             pass
 
-        currently_playing = sp.currently_playing()
-        is_playing = get_is_playing(currently_playing)
-        is_same_song = check_same_song(currently_playing, card_info)
-
         if is_playing and queue and not is_same_song:
-            print('Adding to queue!')
+            print("Adding to queue!")
             add_to_queue(sp, card_info)
         elif is_playing and is_same_song and skip:
-            print('Skipping item!')
+            print("Skipping item!")
             skip_item(sp)
         else:
-            print('Playing item!')
+            print("Playing item!")
             play_item(sp, card_info)
 
 
 def get_is_playing(currently_playing):
     if currently_playing is None:
         return False
-    if currently_playing['is_playing'] is True:
+    if currently_playing["is_playing"] is True:
+        return True
+    if currently_playing["is_playing"] is False and currently_playing["progress_ms"] > 0:
         return True
     else:
         return False
@@ -71,7 +72,7 @@ def get_is_playing(currently_playing):
 def check_same_song(currently_playing, card_info):
     if currently_playing is None:
         return False
-    elif currently_playing['item']['uri'] == card_info[0]:
+    elif currently_playing["item"]["uri"] == card_info[0]:
         return True
     else:
         return False
@@ -124,7 +125,7 @@ def create_reader():
 def create_spotify():
     auth_manager = SpotifyOAuth(
         open_browser=False,
-        redirect_uri='http://localhost:8080',
+        redirect_uri="http://localhost:8080",
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         scope="""
@@ -148,8 +149,8 @@ def refresh_spotify(auth_manager, sp):
         print("Refreshing token!")
 
         try:
-            token_info = auth_manager.refresh_access_token(token_info['refresh_token'])
-            token = token_info['access_token']
+            token_info = auth_manager.refresh_access_token(token_info["refresh_token"])
+            token = token_info["access_token"]
             sp = spotipy.Spotify(auth=token)
 
         except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
@@ -162,7 +163,7 @@ def refresh_spotify(auth_manager, sp):
 def read_dictionairy(file_location):
     card_dict = {}
 
-    with open(file_location, mode='r') as f:
+    with open(file_location, mode="r") as f:
         reader = csv.reader(f)
         card_dict = {rows[0]:(rows[1],rows[2]) for rows in reader}
 
@@ -181,8 +182,8 @@ def main(queue=False, skip=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Control Spotify Connect device using MFRC522, RFID tags, and the Spotify API')
-    parser.add_argument('-q', '--queue', action='store_true', help='Add song to queue when song is already playing, instead of skipping currently playing song')
-    parser.add_argument('-s', '--skip', action='store_true', help='If the currently playing song is scanned again, the next song in the queue (if present) will be played')
+    parser = argparse.ArgumentParser(description="Control Spotify Connect device using MFRC522, RFID tags, and the Spotify API")
+    parser.add_argument("-q", "--queue", action="store_true", help="Add song to queue when song is already playing, instead of skipping currently playing song")
+    parser.add_argument("-s", "--skip", action="store_true", help="If the currently playing song is scanned again, the next song in the queue (if present) will be played")
     args = parser.parse_args()
     main(args.queue, args.skip)
