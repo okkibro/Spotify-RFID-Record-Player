@@ -40,7 +40,6 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
             currently_playing = sp.currently_playing()
             is_playing = get_is_playing(currently_playing)
             is_same_song = check_same_song(currently_playing, card_info)
-            sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
 
         except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
             print("Connection was temporarily reset! Attempting to reconnect and restart...")
@@ -54,6 +53,7 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
             print("Skipping item!")
             skip_item(sp)
         else:
+            sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
             print("Playing item!")
             play_item(sp, card_info)
 

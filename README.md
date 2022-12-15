@@ -33,7 +33,6 @@ A good cheatsheet for `tmux` usage can be found [here](https://gist.github.com/M
 
 - Enable better shuffling for artists (now always plays first track first and the other random tracks).
 - Increase standard limit of playlist from 100 to infinity [link](https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist?rq=1).
-- See if small delay/overlay when adding track to queue can be fixed
 
 ## Known issues
 
