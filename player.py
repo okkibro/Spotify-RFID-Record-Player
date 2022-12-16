@@ -25,6 +25,7 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
         print("Waiting for record scan...")
         card_id = reader.read()[0]
         print("Read succesful! Finding track corresponding to card...")
+        card_info = None
 
         try:
             card_info = card_dict[str(card_id)]
@@ -32,30 +33,32 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
 
         except KeyError:
             print("Unknown card presented! First add card association using the add-card.py script.")
+            sleep(2)
             pass
 
-        auth_manager, sp = refresh_spotify(auth_manager, sp)
-
-        try:
-            currently_playing = sp.currently_playing()
-            is_playing = get_is_playing(currently_playing)
-            is_same_song = check_same_song(currently_playing, card_info)
-
-        except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
-            print("Connection was temporarily reset! Attempting to reconnect and restart...")
+        if card_info is not None:
             auth_manager, sp = refresh_spotify(auth_manager, sp)
-            pass
 
-        if is_playing and queue and not is_same_song:
-            print("Adding to queue!")
-            add_to_queue(sp, card_info)
-        elif is_playing and is_same_song and skip:
-            print("Skipping item!")
-            skip_item(sp)
-        else:
-            sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
-            print("Playing item!")
-            play_item(sp, card_info)
+            try:
+                currently_playing = sp.currently_playing()
+                is_playing = get_is_playing(currently_playing)
+                is_same_song = check_same_song(currently_playing, card_info)
+
+            except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
+                print("Connection was temporarily reset! Attempting to reconnect and restart...")
+                auth_manager, sp = refresh_spotify(auth_manager, sp)
+                pass
+
+            if is_playing and queue and not is_same_song:
+                print("Adding to queue!")
+                add_to_queue(sp, card_info)
+            elif is_playing and is_same_song and skip:
+                print("Skipping item!")
+                skip_item(sp)
+            else:
+                sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
+                print("Playing item!")
+                play_item(sp, card_info)
 
 
 def get_is_playing(currently_playing):
