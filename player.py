@@ -27,6 +27,8 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
         print("Read succesful! Finding track corresponding to card...")
         card_info = None
 
+        sleep(1)
+
         try:
             card_info = card_dict[str(card_id)]
             print("Matching card found! Playing...")
@@ -43,30 +45,55 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
                 currently_playing = sp.currently_playing()
                 is_playing = get_is_playing(currently_playing)
                 is_same_song = check_same_song(currently_playing, card_info)
+#                do_skip = perform_premptive_skip(currently_playing)
+                devices = sp.devices()
+                is_jukebox_active = is_jukebox_active_device(devices)
 
             except (ConnectionResetError, requests.exceptions.ConnectionError, urllib3.exceptions.ProtocolError) as e:
                 print("Connection was temporarily reset! Attempting to reconnect and restart...")
                 auth_manager, sp = refresh_spotify(auth_manager, sp)
                 pass
 
+            if is_jukebox_active is False:
+                sp.transfer_playback(device_id=DEVICE_ID,force_play=True)
+
             if is_playing and queue and not is_same_song:
                 print("Adding to queue!")
-                add_to_queue(sp, card_info)
+                add_to_queue(sp, card_info, do_skip, is_playing)
             elif is_playing and is_same_song and skip:
                 print("Skipping item!")
                 skip_item(sp)
             else:
-                sp.transfer_playback(device_id=DEVICE_ID,force_play=False)
                 print("Playing item!")
                 play_item(sp, card_info)
+
+
+def perform_premptive_skip(currently_playing):
+    if currently_playing is None:
+        return False
+    elif currently_playing["progress_ms"] == 0:
+        return True
+    else:
+        return False
 
 
 def get_is_playing(currently_playing):
     if currently_playing is None:
         return False
-    if currently_playing["is_playing"] is True:
+    elif currently_playing["is_playing"] is True:
         return True
-    if currently_playing["is_playing"] is False and currently_playing["progress_ms"] > 0:
+    elif currently_playing["is_playing"] is False and currently_playing["progress_ms"] > 0:
+        return True
+    else:
+        return False
+
+
+def is_jukebox_active_device(devices):
+    active_device = next((item for item in devices['devices'] if item["is_active"] == True), None)
+
+    if active_device is None:
+        return False
+    if active_device['id'] == DEVICE_ID:
         return True
     else:
         return False
@@ -75,15 +102,20 @@ def get_is_playing(currently_playing):
 def check_same_song(currently_playing, card_info):
     if currently_playing is None:
         return False
+    elif currently_playing['is_playing'] is False:
+        return False
     elif currently_playing["item"]["uri"] == card_info[0]:
         return True
     else:
         return False
 
 
-def add_to_queue(sp, card_info):
+def add_to_queue(sp, card_info, do_skip, is_playing):
+#    if do_skip:
+#        skip_item(sp)
     sp.add_to_queue(device_id=DEVICE_ID, uri=card_info[0])
-    sp.start_playback()
+    if not is_playing:
+        sp.start_playback()
 
 
 def skip_item(sp):
