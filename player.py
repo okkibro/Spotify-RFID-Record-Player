@@ -45,7 +45,6 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
                 currently_playing = sp.currently_playing()
                 is_playing = get_is_playing(currently_playing)
                 is_same_song = check_same_song(currently_playing, card_info)
-#                do_skip = perform_premptive_skip(currently_playing)
                 devices = sp.devices()
                 is_jukebox_active = is_jukebox_active_device(devices)
 
@@ -59,7 +58,7 @@ def player(card_dict, reader, auth_manager, sp, queue, skip):
 
             if is_playing and queue and not is_same_song:
                 print("Adding to queue!")
-                add_to_queue(sp, card_info, do_skip, is_playing)
+                add_to_queue(sp, card_info, is_playing)
             elif is_playing and is_same_song and skip:
                 print("Skipping item!")
                 skip_item(sp)
@@ -110,10 +109,9 @@ def check_same_song(currently_playing, card_info):
         return False
 
 
-def add_to_queue(sp, card_info, do_skip, is_playing):
-#    if do_skip:
-#        skip_item(sp)
+def add_to_queue(sp, card_info, is_playing):
     sp.add_to_queue(device_id=DEVICE_ID, uri=card_info[0])
+
     if not is_playing:
         sp.start_playback()
 
